@@ -31,9 +31,9 @@ func newVaultLoginResponse() *VaultLoginResponse {
 
 // TODO Write correct json tags
 type VaultSecret struct {
-	Password    string `json:"password"`
-	User        string `json:"user"`
-	Private_key string `json:"private_key"`
+	Password    string `json:"ssh_password"`
+	User        string `json:"ssh_user"`
+	Private_key string `json:"ssh_pkey"`
 }
 
 type VaultSecretResponse struct {
