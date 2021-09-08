@@ -85,9 +85,9 @@ func main() {
 	}
 
 	if *introspection_secret == "" {
-		security_config.Introspection_secret = os.Getenv("OIDC_INTROSPECTION_SECRET")
+		security_config.Introspection_secret = os.Getenv("OIDC_CLIENT_SECRET")
 		if len(security_config.Introspection_secret) == 0 {
-			log.Fatal("No introspection secret given. Provide argument --introspection-secret or set environment variable OIDC_INTROSPECTION_SECRET")
+			log.Fatal("No introspection secret given. Provide argument --introspection-secret or set environment variable OIDC_CLIENT_SECRET")
 		}
 	} else {
 		security_config.Introspection_secret = *introspection_secret
@@ -96,7 +96,7 @@ func main() {
 	if *vault_secret_uploader_address == "" {
 		security_config.Vault_secret_uploader_address = os.Getenv("VAULT_SECRET_UPLOADER_ADDRESS")
 		if len(security_config.Vault_secret_uploader_address) == 0 {
-			log.Fatal("No introspection secret given. Provide argument --vault-login-endpoint or set environment variable VAULT_ADDRESS")
+			log.Fatal("No vault-secret-uploader address given. Provide argument --vault-secret-uploader-address or set environment variable VAULT_SECRET_UPLOADER_ADDRESS")
 		}
 	} else {
 		security_config.Vault_secret_uploader_address = *vault_secret_uploader_address
