@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"hpc_exporter/conf"
@@ -85,29 +84,23 @@ func (d *UserData) GetSSHCredentials(method, hpc string, r *http.Request, securi
 		d.getJWT(r)
 	}
 
-	vault_client_token, err := d.getVaultToken(security_conf)
-	if err != nil {
-		return err
-	}
-
 	client := &http.Client{}
 
-	secret_endpoint := "http://" + security_conf.Vault_address + "/v1/hpc/" + d.username + "/" + hpc
+	secret_endpoint := "http://" + security_conf.Vault_secret_uploader_address + "/hpc/" + hpc
 	req, err := http.NewRequest("GET", secret_endpoint, nil)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("X-Vault-Token", vault_client_token)
+	req.Header.Set("Authorization", "Bearer "+d.jwt)
 	resp_vault, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp_vault.Body.Close()
-	vault_response := newVaultSecretResponse()
-	if err := json.NewDecoder(resp_vault.Body).Decode(vault_response); err != nil {
+	vault_secret := newVaultSecret()
+	if err := json.NewDecoder(resp_vault.Body).Decode(vault_secret); err != nil {
 		return errors.New("error when retrieving the Vault secrets")
 	}
-	vault_secret := vault_response.Data
 	d.ssh_user = vault_secret.User
 	if d.ssh_user == "" {
 		return errors.New("no user stored in Vault")
@@ -126,31 +119,4 @@ func (d *UserData) GetSSHCredentials(method, hpc string, r *http.Request, securi
 	}
 
 	return nil
-}
-
-func (d *UserData) getVaultToken(security_conf conf.Security) (string, error) {
-	client := &http.Client{}
-
-	s := vaultLogin(d.jwt, d.username)
-	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(s)
-
-	vault_login_endpoint := "http://" + security_conf.Vault_address + "/v1/auth/jwt/login"
-	req, err := http.NewRequest("POST", vault_login_endpoint, b)
-	if err != nil {
-		return "", errors.New("could not create Vault login request")
-	}
-
-	resp_login, err := client.Do(req)
-	if err != nil {
-		return "", errors.New("there was an error trying to log into Vault")
-	}
-	defer resp_login.Body.Close()
-
-	vault_response := newVaultLoginResponse()
-	if err := json.NewDecoder(resp_login.Body).Decode(vault_response); err != nil {
-		return "", errors.New("error when retrieving the Vault token")
-	}
-
-	return vault_response.Auth.Client_token, nil
 }

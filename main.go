@@ -46,8 +46,8 @@ var (
 		"Introspection client secret.",
 	)
 
-	vault_address = flag.String(
-		"vault-address",
+	vault_secret_uploader_address = flag.String(
+		"vault-secret-uploader-address",
 		"",
 		"Vault login endpoint.",
 	)
@@ -93,13 +93,13 @@ func main() {
 		security_config.Introspection_secret = *introspection_secret
 	}
 
-	if *vault_address == "" {
-		security_config.Vault_address = os.Getenv("VAULT_ADDRESS")
-		if len(security_config.Vault_address) == 0 {
+	if *vault_secret_uploader_address == "" {
+		security_config.Vault_secret_uploader_address = os.Getenv("VAULT_SECRET_UPLOADER_ADDRESS")
+		if len(security_config.Vault_secret_uploader_address) == 0 {
 			log.Fatal("No introspection secret given. Provide argument --vault-login-endpoint or set environment variable VAULT_ADDRESS")
 		}
 	} else {
-		security_config.Vault_address = *vault_address
+		security_config.Vault_secret_uploader_address = *vault_secret_uploader_address
 	}
 
 	collectorStore := api.NewCollectorStore(security_config)

@@ -14,50 +14,19 @@ func newKeycloakResponse() *KeycloakResponse {
 	}
 }
 
-type VaultAuth struct {
-	Client_token string `json:"client_token"`
-}
-type VaultLoginResponse struct {
-	Auth *VaultAuth `json:"auth"`
-}
-
-func newVaultLoginResponse() *VaultLoginResponse {
-	return &VaultLoginResponse{
-		Auth: &VaultAuth{
-			Client_token: "",
-		},
-	}
-}
-
 // TODO Write correct json tags
 type VaultSecret struct {
 	Password    string `json:"ssh_password"`
 	User        string `json:"ssh_user"`
 	Private_key string `json:"ssh_pkey"`
+	Hpc         string `json:"hpc"`
 }
 
-type VaultSecretResponse struct {
-	Data *VaultSecret `json:"data"`
-}
-
-func newVaultSecretResponse() *VaultSecretResponse {
-	return &VaultSecretResponse{
-		Data: &VaultSecret{
-			Password:    "",
-			User:        "",
-			Private_key: "",
-		},
-	}
-}
-
-type VaultLoginRequest struct {
-	Jwt  string `json:"jwt"`
-	Role string `json:"role"`
-}
-
-func vaultLogin(jwt, role string) *VaultLoginRequest {
-	return &VaultLoginRequest{
-		Jwt:  jwt,
-		Role: role,
+func newVaultSecret() *VaultSecret {
+	return &VaultSecret{
+		Password:    "",
+		User:        "",
+		Private_key: "",
+		Hpc:         "",
 	}
 }

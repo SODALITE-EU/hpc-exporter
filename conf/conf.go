@@ -36,17 +36,17 @@ func DefaultConfig() *CollectorConfig {
 }
 
 type Security struct {
-	Introspection_endpoint string
-	Introspection_secret   string
-	Introspection_client   string
-	Vault_address          string
+	Introspection_endpoint        string
+	Introspection_secret          string
+	Introspection_client          string
+	Vault_secret_uploader_address string
 }
 
 func NewSecurityConf() *Security {
 	return &Security{
-		Introspection_endpoint: "",
-		Introspection_secret:   "",
-		Introspection_client:   "",
-		Vault_address:          "",
+		Introspection_endpoint:        "",
+		Introspection_secret:          "",
+		Introspection_client:          "",
+		Vault_secret_uploader_address: "",
 	}
 }
