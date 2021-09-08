@@ -3,9 +3,9 @@ package pbs
 import (
 	"bytes"
 	"errors"
+	"hpc_exporter/conf"
 	"hpc_exporter/ssh"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -84,13 +84,17 @@ type PBSCollector struct {
 	qLabels        map[string](map[string](string))
 	mutex          *sync.Mutex
 	targetJobIds   string
-	staticJobIds   []string
-	dynamicJobIds  []string
-	targetJobsFile string
+	JobIds         []string
 	skipInfra      bool
+	Email          string
 }
 
-func NewerPBSCollector(host, sshUser, sshAuthMethod, sshPass string, sshPrivKey []byte, sshKnownHosts, timeZone string, scrapeInterval int, targetJobIds, targetJobsFile string, constLabels prometheus.Labels, skipInfra bool) *PBSCollector {
+func NewerPBSCollector(config *conf.CollectorConfig, email string) *PBSCollector {
+
+	constLabels := make(prometheus.Labels)
+	constLabels["deployment_label"] = config.Deployment_label
+	constLabels["hpc"] = config.Hpc_label
+	constLabels["monitoring_id"] = config.Monitoring_id
 
 	var metrics = map[string]PromMetricDesc{
 		"JobState":        {"pbs_job_state", "job current state", jobtags, constLabels, true},
@@ -102,7 +106,7 @@ func NewerPBSCollector(host, sshUser, sshAuthMethod, sshPass string, sshPrivKey 
 		"JobNCPUs":        {"pbs_job_cpu_n", "job number of threads requested by the job", jobtags, constLabels, true},
 		"JobVMEM":         {"pbs_job_mem_virtual", "job virtual memory used", jobtags, constLabels, true},
 		"JobQueued":       {"pbs_job_time_queued", "job time spent between creation and running start (or now)", jobtags, constLabels, true},
-		"JobRSS":          {"pbs_job_memory_physical", "job physical memory used", jobtags, constLabels, true},
+		"JobRSS":          {"pbs_job_mem_physical", "job physical memory used", jobtags, constLabels, true},
 		"JobExitStatus":   {"pbs_job_exit_status", "job exit status. -1 if not completed", jobtags, constLabels, true},
 		"QueueTotal":      {"pbs_queue_jobs_total", "queue total number of jobs assigned", queuetags, constLabels, false},
 		"QueueMax":        {"pbs_queue_jobs_max", "queue max number of jobs", queuetags, constLabels, false},
@@ -121,28 +125,25 @@ func NewerPBSCollector(host, sshUser, sshAuthMethod, sshPass string, sshPrivKey 
 		descPtrMap:     make(map[string](*prometheus.Desc)),
 		sshClient:      nil,
 		trackedJobs:    make(map[string]bool),
-		scrapeInterval: scrapeInterval,
-		lastScrape:     time.Now().Add(time.Second * (time.Duration((-2 * scrapeInterval)))),
+		scrapeInterval: config.Scrape_interval,
+		lastScrape:     time.Now().Add(time.Second * (time.Duration((-2 * config.Scrape_interval)))),
 		jMetrics:       make(map[string](map[string](float64))),
 		qMetrics:       make(map[string](map[string](float64))),
 		jLabels:        make(map[string](map[string](string))),
 		qLabels:        make(map[string](map[string](string))),
 		mutex:          &sync.Mutex{},
-		staticJobIds:   strings.Split(targetJobIds, ","),
-		dynamicJobIds:  make([]string, 0),
-		targetJobsFile: targetJobsFile,
-		skipInfra:      skipInfra,
+		JobIds:         []string{},
+		skipInfra:      config.Only_jobs,
+		Email:          email,
 	}
 
 	newerPBSCollector.updateDynamicJobIds()
 
-	switch authmethod := sshAuthMethod; authmethod {
+	switch authmethod := config.Auth_method; authmethod {
 	case "keypair":
-		newerPBSCollector.sshConfig = ssh.NewSSHConfigByPublicKeys(sshUser, host, 22, sshPrivKey, sshKnownHosts)
+		newerPBSCollector.sshConfig = ssh.NewSSHConfigByPublicKeys(config.User, config.Host, 22, []byte(config.Private_key))
 	case "password":
-		newerPBSCollector.sshConfig = ssh.NewSSHConfigByPassword(sshUser, sshPass, host, 22)
-	default:
-		log.Fatalf("The authentication method provided (%s) is not supported.", authmethod)
+		newerPBSCollector.sshConfig = ssh.NewSSHConfigByPassword(config.User, config.Password, config.Host, 22)
 	}
 
 	for key, metric := range metrics {
@@ -161,8 +162,6 @@ func NewerPBSCollector(host, sshUser, sshAuthMethod, sshPass string, sshPrivKey 
 	for _, label := range queuetags {
 		newerPBSCollector.qLabels[label] = make(map[string]string)
 	}
-
-	log.Infof("Target jobs, if specified: %s", newerPBSCollector.staticJobIds)
 
 	return newerPBSCollector
 }
@@ -194,12 +193,13 @@ func (pc *PBSCollector) Collect(ch chan<- prometheus.Metric) {
 		defer pc.sshClient.Close()
 		log.Infof("Collecting metrics from PBS...")
 		pc.trackedJobs = make(map[string]bool)
-		pc.collectJobs(ch)
+		if pc.targetJobIds != "" {
+			pc.collectJobs(ch)
+		}
 		if !pc.skipInfra {
 			pc.collectQueues(ch)
 		}
 		pc.lastScrape = time.Now()
-		pc.delJobs()
 	}
 	pc.updateMetrics(ch)
 }
@@ -348,20 +348,6 @@ func (pc *PBSCollector) updateMetrics(ch chan<- prometheus.Metric) {
 
 }
 
-func (sc *PBSCollector) delJobs() {
-	log.Debugf("Cleaning old jobs")
-	i := 0
-	for job, tracked := range sc.trackedJobs {
-		if !tracked {
-			for _, elems := range sc.jMetrics {
-				delete(elems, job)
-				i++
-			}
-		}
-	}
-	log.Debugf("%d old jobs deleted", i)
-}
-
 func parseMem(s string) (float64, error) {
 	l := len(s)
 	if l == 0 {
@@ -395,16 +381,7 @@ func parsePBSDateTime(s string) (time.Time, error) {
 }
 
 func (pc *PBSCollector) updateDynamicJobIds() {
-	if pc.targetJobsFile != "" {
-		if fileBytes, err := os.ReadFile(pc.targetJobsFile); err == nil {
-			fileStr := string(fileBytes)
-			fileStr = strings.Trim(fileStr, "\n")
-			pc.dynamicJobIds = strings.Split(fileStr, "\n")
-		} else {
-			log.Warnf("Could not open the dynamic target Job IDs file: %s", pc.targetJobsFile)
-		}
-	}
-	targetJobIds := strings.Join([]string{strings.Join(pc.staticJobIds, ","), strings.Join(pc.dynamicJobIds, ",")}, ",") //We join the static and dynamic jobIds in a single string separated by commas
 
+	targetJobIds := strings.Join(pc.JobIds, ",")
 	pc.targetJobIds = strings.Trim(targetJobIds, ",")
 }
