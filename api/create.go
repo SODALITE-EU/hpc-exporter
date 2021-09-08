@@ -49,6 +49,7 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
+			return
 		}
 
 		config.User = userData.ssh_user
@@ -82,6 +83,7 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 		prometheus.MustRegister(s.storePBS[key])
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Collector created"))
+		return
 	case "slurm":
 		if _, exists := s.storePBS[key]; exists {
 			w.WriteHeader(http.StatusBadRequest)
@@ -92,8 +94,10 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 		prometheus.MustRegister(s.storeSlurm[key])
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Collector created"))
+		return
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("The scheduler type provided (%s) is not supported.", sched)))
+		return
 	}
 }
