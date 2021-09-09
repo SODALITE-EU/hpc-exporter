@@ -62,6 +62,7 @@ func (s *HpcExporterStore) DeleteHandler(w http.ResponseWriter, r *http.Request)
 	if collector, ok := s.storePBS[key]; ok {
 		if collector.Email == userData.email {
 			prometheus.Unregister(collector)
+			delete(s.storePBS, key)
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("User not authorized to delete the provided monitoring_id"))
@@ -69,6 +70,7 @@ func (s *HpcExporterStore) DeleteHandler(w http.ResponseWriter, r *http.Request)
 	} else if collector, ok := s.storeSlurm[key]; ok {
 		if collector.Email == userData.email {
 			prometheus.Unregister(collector)
+			delete(s.storeSlurm, key)
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("User not authorized to delete the provided monitoring_id"))
