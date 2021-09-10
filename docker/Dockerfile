@@ -8,6 +8,7 @@ WORKDIR /app
 # Install git
 RUN apk add --update --no-cache git
 
+ARG VERSION
 # Get HPC exporter
 RUN git clone https://github.com/SODALITE-EU/hpc-exporter.git --depth 1 --branch $VERSION
 # Build the code
