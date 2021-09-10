@@ -70,8 +70,10 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 			}
 		case "":
 			if userData.ssh_password != "" {
+				config.Auth_method = "password"
 				config.Password = userData.ssh_password
 			} else if userData.ssh_private_key != "" {
+				config.Auth_method = "keypair"
 				config.Private_key = userData.ssh_private_key
 			} else {
 				w.WriteHeader(http.StatusBadRequest)
