@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apk add --update --no-cache git
 
 # Get HPC exporter
-RUN git clone https://github.com/SODALITE-EU/hpc-exporter.git
+RUN git clone https://github.com/SODALITE-EU/hpc-exporter.git --depth 1 --branch $BRANCH_NAME
 # Build the code
 RUN cd hpc-exporter && go build
 
