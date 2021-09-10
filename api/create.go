@@ -55,12 +55,32 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 		config.User = userData.ssh_user
 		switch authmethod := config.Auth_method; authmethod {
 		case "keypair":
-			config.Private_key = userData.ssh_private_key
+			if userData.ssh_private_key != "" {
+				config.Private_key = userData.ssh_private_key
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("Keypair authentication method requested but Vault secret did not have private key."))
+				return
+			}
 		case "password":
-			config.Password = userData.ssh_password
+			if userData.ssh_password != "" {
+				config.Password = userData.ssh_password
+			} else {
+				w.Write([]byte("Password authentication method requested but Vault secret did not have password."))
+			}
+		case "":
+			if userData.ssh_password != "" {
+				config.Password = userData.ssh_password
+			} else if userData.ssh_private_key != "" {
+				config.Private_key = userData.ssh_private_key
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("Vault secret did not have neither password nor private key."))
+				return
+			}
 		default:
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("The authentication method provided (%s) is not supported.", authmethod)))
+			w.Write([]byte(fmt.Sprintf("The authentication method requested (%s) is not supported.", authmethod)))
 			return
 		}
 	}
