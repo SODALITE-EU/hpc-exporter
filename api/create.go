@@ -45,7 +45,7 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 		w.Write([]byte("HPC Host missing."))
 		return
 	} else {
-		err = userData.GetSSHCredentials(config.Auth_method, config.Host, r, *s.security)
+		err = userData.GetSSHCredentials(config.Host, r, *s.security)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
@@ -75,7 +75,7 @@ func (s *HpcExporterStore) CreateHandler(w http.ResponseWriter, r *http.Request)
 				config.Private_key = userData.ssh_private_key
 			} else {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Vault secret did not have neither password nor private key."))
+				w.Write([]byte("Vault secret did not have password or private key."))
 				return
 			}
 		default:

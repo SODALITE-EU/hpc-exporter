@@ -79,7 +79,7 @@ func (d *UserData) GetUser(r *http.Request, security_conf conf.Security) error {
 
 }
 
-func (d *UserData) GetSSHCredentials(method, hpc string, r *http.Request, security_conf conf.Security) error {
+func (d *UserData) GetSSHCredentials(hpc string, r *http.Request, security_conf conf.Security) error {
 	if d.jwt == "" {
 		d.getJWT(r)
 	}
@@ -105,18 +105,7 @@ func (d *UserData) GetSSHCredentials(method, hpc string, r *http.Request, securi
 	if d.ssh_user == "" {
 		return errors.New("no user stored in Vault")
 	}
-	switch method {
-	case "password":
-		d.ssh_password = vault_secret.Password
-		if d.ssh_password == "" {
-			return errors.New("no password stored in Vault")
-		}
-	case "keypair":
-		d.ssh_private_key = vault_secret.Private_key
-		if d.ssh_private_key == "" {
-			return errors.New("no private key stored in Vault")
-		}
-	}
-
+	d.ssh_password = vault_secret.Password
+	d.ssh_private_key = vault_secret.Private_key
 	return nil
 }
