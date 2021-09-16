@@ -19,7 +19,7 @@ type VaultSecret struct {
 	Password    string `json:"ssh_password"`
 	User        string `json:"ssh_user"`
 	Private_key string `json:"ssh_pkey"`
-	Hpc         string `json:"hpc"`
+	Host        string `json:"ssh_host"`
 }
 
 func newVaultSecret() *VaultSecret {
@@ -27,6 +27,6 @@ func newVaultSecret() *VaultSecret {
 		Password:    "",
 		User:        "",
 		Private_key: "",
-		Hpc:         "",
+		Host:        "",
 	}
 }

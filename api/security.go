@@ -86,7 +86,7 @@ func (d *UserData) GetSSHCredentials(hpc string, r *http.Request, security_conf 
 
 	client := &http.Client{}
 
-	secret_endpoint := "http://" + security_conf.Vault_secret_uploader_address + "/hpc/" + hpc
+	secret_endpoint := "http://" + security_conf.Vault_secret_uploader_address + "/ssh/" + hpc
 	req, err := http.NewRequest("GET", secret_endpoint, nil)
 	if err != nil {
 		return err
