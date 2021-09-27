@@ -6,6 +6,7 @@ import (
 	"hpc_exporter/conf"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 )
 
 func (s *HpcExporterStore) AddJobHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,10 +39,13 @@ func (s *HpcExporterStore) AddJobHandler(w http.ResponseWriter, r *http.Request)
 		w.Write([]byte("Need the Monitoring_id"))
 		return
 	}
-
 	if config.Job_id == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Need the Job_id"))
+		return
+	} else if r, _ := regexp.MatchString("^[a-zA-Z0-9]([a-zA-Z0-9.])*$", config.Job_id); !r {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Job_id provided did not have a valid format"))
 		return
 	}
 
