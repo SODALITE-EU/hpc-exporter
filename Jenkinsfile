@@ -2,7 +2,7 @@ pipeline {
     agent { label 'docker-slave' }
     environment {
         // CI-CD vars
-        docker_registry_ip = credentials('jenkins-docker-registry-ip')
+        // docker_registry_ip = credentials('jenkins-docker-registry-ip')
         // When triggered from git tag, $BRANCH_NAME is actually GIT's tag_name
         TAG_SEM_VER_COMPLIANT = """${sh(
                 returnStdout: true,
