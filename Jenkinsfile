@@ -55,20 +55,19 @@ pipeline {
                 sh "cd docker && ./make_docker.sh build hpc-exporter"
             }
         }
-        stage('Push HPC-exporter to sodalite-private-registry') {
-            // Push during staging and production
+        stage('Push HPC-exporter to DockerHub for staging') {
             when {
                 allOf {
                     expression{tag "*"}
                     expression{
-                        TAG_STAGING == 'true' || TAG_PRODUCTION == 'true'
+                        TAG_STAGING == 'true'
                     }
                 }
             }
             steps {
                 withDockerRegistry(credentialsId: 'jenkins-sodalite.docker_token', url: '') {
                     sh  """#!/bin/bash
-                        ./docker/make_docker.sh push hpc-exporter staging
+                        ./docker/make_docker.sh push hpc-exporter sodaliteh2020 staging
                         """
                 }
             }
@@ -76,7 +75,6 @@ pipeline {
         stage('Push HPC-exporter to DockerHub') {
             when {
                 allOf {
-                    // Triggered on every tag, that is considered for staging or production
                     expression{tag "*"}
                     expression{
                         TAG_PRODUCTION == 'true'
@@ -85,7 +83,7 @@ pipeline {
              }
             steps {
                 withDockerRegistry(credentialsId: 'jenkins-sodalite.docker_token', url: '') {
-                    sh "./docker/make_docker.sh push hpc-exporter production"
+                    sh "./docker/make_docker.sh push hpc-exporter sodaliteh2020 production"
                 }
             }
         }
