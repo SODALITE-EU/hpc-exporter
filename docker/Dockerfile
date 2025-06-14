@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine
+FROM golang:1.25rc1-alpine
 
 # LABEL maintainer="jesus.ramos.external@atos.net"
 
